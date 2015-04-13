@@ -9,54 +9,55 @@ library(sp)
 library(rgeos)
 
 setwd("~/AppLCC/Data")
+list.files()
 
-file<-"ebd_US_woothr_relNov-2014.txt"
+file<-"ebd_US_gowwar_relNov-2014.txt"
 
 #Use Import Dataset function from RStudio
-WOTH<-ebd_US_woothr_relNov.2014
+GWWA<-ebd_US_gowwar_relNov.2014
 
 #Clean data and subset to important variables
-for(i in 1:length(WOTH[1,])){
-  names(WOTH)[i]<-as.character(WOTH[1,][i][1,1])
+for(i in 1:length(GWWA[1,])){
+  names(GWWA)[i]<-as.character(GWWA[1,][i][1,1])
 }
-WOTH <- WOTH[-1,]
-WOTH <- WOTH[,-43]
-WOTH.df<-WOTH[c(8,22,23,24)]
+GWWA <- GWWA[-1,]
+GWWA <- GWWA[,-43]
+GWWA.df<-GWWA[c(8,22,23,24)]
 
-names(WOTH.df)[1]<-"Count"
-names(WOTH.df)[2]<-"Lat"
-names(WOTH.df)[3]<-"Lon"
-names(WOTH.df)[4]<-"Date"
+names(GWWA.df)[1]<-"Count"
+names(GWWA.df)[2]<-"Lat"
+names(GWWA.df)[3]<-"Lon"
+names(GWWA.df)[4]<-"Date"
 
-WOTH.df$Count<-(as.numeric(levels(WOTH.df$Count))[WOTH.df$Count])
-WOTH.df$Lat<-(as.numeric(levels(WOTH.df$Lat))[WOTH.df$Lat])
-WOTH.df$Lon<-(as.numeric(levels(WOTH.df$Lon))[WOTH.df$Lon])
+GWWA.df$Count<-(as.numeric(levels(GWWA.df$Count))[GWWA.df$Count])
+GWWA.df$Lat<-(as.numeric(levels(GWWA.df$Lat))[GWWA.df$Lat])
+GWWA.df$Lon<-(as.numeric(levels(GWWA.df$Lon))[GWWA.df$Lon])
 
-WOTH.df<-WOTH.df[complete.cases(WOTH.df[,2:4]),]
+GWWA.df<-GWWA.df[complete.cases(GWWA.df[,2:4]),]
 
-summary(WOTH.df)
+summary(GWWA.df)
 
 #Subset to region of interest
-#WOTH.App <- WOTH.df[ which(WOTH.df$"BCR CODE"=='28' | WOTH.df$"BCR CODE"=='24') ,]
-# dups <- duplicated(WOTH.df[, c('species','lon','lat')])
-# WOTH.df.dup <- WOTH.df[!dups, ]
-# georef<-subset(WOTH.df, (is.na(Lon)|is.na(Lat)))
+#GWWA.App <- GWWA.df[ which(GWWA.df$"BCR CODE"=='28' | GWWA.df$"BCR CODE"=='24') ,]
+# dups <- duplicated(GWWA.df[, c('species','lon','lat')])
+# GWWA.df.dup <- GWWA.df[!dups, ]
+# georef<-subset(GWWA.df, (is.na(Lon)|is.na(Lat)))
 # dim(georef)
 
-coords = cbind(WOTH.df$Lon, WOTH.df$Lat)
-sp = SpatialPointsDataFrame(coords,WOTH.df)
-writeOGR(sp, ".", "WOTHpoints", driver="ESRI Shapefile")
+coords = cbind(GWWA.df$Lon, GWWA.df$Lat)
+sp = SpatialPointsDataFrame(coords,GWWA.df)
+writeOGR(sp, ".", "GWWApoints", driver="ESRI Shapefile")
 
 # proj4string(sp)
 # proj4string(Boundary)
 # over(sp,Boundary)
 
 #Read in data that was clipped in Arcgis after Projected
-data = read.table("WOTH_App_Points.txt", header=TRUE,sep=",")
-WOTH.App <- data[,-1]
+data = read.table("GWWA_App_Points.txt", header=TRUE,sep=",")
+GWWA.App <- data[,-1]
 
-str(WOTH.App)
-summary(WOTH.App)
+str(GWWA.App)
+summary(GWWA.App)
 
 #Plot to observe/check Data
 data(stateMapEnv)
@@ -69,60 +70,60 @@ axis(1,las=1)
 axis(2,las=1)
 box()
 # plot points
-points(WOTH.App$Lon, WOTH.App$Lat, col='orange', pch=20, cex=0.75)
+points(GWWA.App$Lon, GWWA.App$Lat, col='orange', pch=20, cex=0.75)
 # plot points again to add a border, for better visibility
-points(WOTH.App$Lon, WOTH.App$Lat, col='red', cex=0.75)
+points(GWWA.App$Lon, GWWA.App$Lat, col='red', cex=0.75)
 plot(Boundary,border="deepskyblue4",lwd=1.5,add=TRUE)
 
 #How Much Data and when is it from?
-dim(WOTH.App)
-plot(WOTH.App$Date,WOTH.App$Count)
-WOTH.App$Date<-as.Date(WOTH.App$Date)
-length(WOTH.App$Date[which(WOTH.App$Date >= "2000-01-01",)])
+dim(GWWA.App)
+plot(GWWA.App$Date,GWWA.App$Count)
+GWWA.App$Date<-as.Date(GWWA.App$Date)
+length(GWWA.App$Date[which(GWWA.App$Date >= "2000-01-01",)])
 #Subset to data from 1980 onward
-WOTH.App = subset(WOTH.App, WOTH.App$Date >= "1980-01-01")
+GWWA.App = subset(GWWA.App, GWWA.App$Date >= "1980-01-01")
 
-str(WOTH.App)
-summary(WOTH.App)
+str(GWWA.App)
+summary(GWWA.App)
 
 ###################################################################
 #Consider subsampling data to reduce some observation bias
 r<-raster(Boundary)
 res(r)<-0.2
 r <- extend(r, extent(r)+1)
-WOTH.Sample <- gridSample(cbind(WOTH.App$Lon, WOTH.App$Lat), r, n=1)
-dim(WOTH.Sample)
+GWWA.Sample <- gridSample(cbind(GWWA.App$Lon, GWWA.App$Lat), r, n=1)
+dim(GWWA.Sample)
 
 p <- rasterToPolygons(r)
 plot(p, border='gray')
-points(WOTH.App$Lon, WOTH.App$Lat, col='dark grey', pch=20, cex=0.75)
-points(WOTH.Sample, cex=1, col='red', pch=1)
+points(GWWA.App$Lon, GWWA.App$Lat, col='dark grey', pch=20, cex=0.75)
+points(GWWA.Sample, cex=1, col='red', pch=1)
 
-#write.csv(WOTH.Sample, file = "WOTH_Sample.csv")
+#write.csv(GWWA.Sample, file = "GWWA_Sample.csv")
 ###################################################################
 ###################################################################
 
-WOTH.Sample <- read.csv("WOTH_Sample.csv")
+GWWA.Sample <- read.csv("GWWA_Sample.csv")
 
-str(WOTH.Sample)
-summary(WOTH.Sample)
+str(GWWA.Sample)
+summary(GWWA.Sample)
 
-coords = cbind(WOTH.Sample$Lon, WOTH.Sample$Lat)
-sp = SpatialPointsDataFrame(coords,WOTH.Sample)
-writeOGR(sp, ".", "WOTH.Sample", driver="ESRI Shapefile")
+coords = cbind(GWWA.Sample$Lon, GWWA.Sample$Lat)
+sp = SpatialPointsDataFrame(coords,GWWA.Sample)
+writeOGR(sp, ".", "GWWA.Sample", driver="ESRI Shapefile")
 
 ###################################################################
 
-#Calculate psuedo-abscences of WOTH data in this area 
-  # using random points with circles() and spsample()
+#Calculate psuedo-abscences of GWWA data in this area 
+# using random points with circles() and spsample()
 #Consider what is a reasonable distance to assume similar habitat
-  #e.g. 30 km radius of reasonably similar habitat
+#e.g. 30 km radius of reasonably similar habitat
 
-x = circles(WOTH.Sample[,c("Lon","Lat")], d=30000, lonlat=T)
+x = circles(GWWA.Sample[,c("Lon","Lat")], d=30000, lonlat=T)
 bg = spsample(x@polygons, 800, type='random', iter=1000)
 
 length(bg)
-dim(WOTH.Sample)
+dim(GWWA.Sample)
 
 
 #Plot data to observe trends:
@@ -136,14 +137,13 @@ box()
 
 plot(x@polygons, border='dark grey', lwd=2,col=c("ghostwhite",alpha=0.7),add=TRUE)
 points(bg, col='darkorange1', pch=1, cex=0.9)
-points(WOTH.Sample, col="darkolivegreen3", pch=20, cex=0.9)
+points(GWWA.Sample, col="darkolivegreen3", pch=20, cex=0.9)
 plot(Boundary,border="deepskyblue4",lwd=1.5,add=TRUE)
 
 
 
 
 #Collect and Integrate Environmental Data into the Model framework
-
 
 
 
